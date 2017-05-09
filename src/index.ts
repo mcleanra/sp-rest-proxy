@@ -8,6 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 import { Context } from './utils/context';
+import { PipeRouter } from './routers/pipe';
 import { RestGetRouter } from './routers/restGet';
 import { RestPostRouter } from './routers/restPost';
 import { SoapRouter } from './routers/soap';
@@ -39,7 +40,8 @@ class RestProxy {
         this.routers = {
             apiRestRouter: express.Router(),
             apiSoapRouter: express.Router(),
-            staticRouter: express.Router()
+            staticRouter: express.Router(),
+            pipeRouter: express.Router()
         };
     }
 
@@ -66,6 +68,10 @@ class RestProxy {
                 );
                 /* Raw injection into specific URI endpoint */
 
+                this.routers.pipeRouter.get(
+                    '/*',
+                    (new PipeRouter(ctx, this.settings)).router
+                );
                 this.routers.apiRestRouter.get(
                     '/*',
                     (new RestGetRouter(ctx, this.settings)).router
@@ -91,7 +97,7 @@ class RestProxy {
                 this.app.use(cors());
                 this.app.use('*/_api', this.routers.apiRestRouter);
                 this.app.use('*/_vti_bin', this.routers.apiSoapRouter);
-                this.app.use('/', this.routers.staticRouter);
+                this.app.use('/', this.routers.pipeRouter);
 
                 this.app.listen(this.settings.port, this.settings.hostname, () => {
                     console.log(`SharePoint REST Proxy has been started on http://${this.settings.hostname}:${this.settings.port}`);
