@@ -9,6 +9,7 @@ export class PipeRouter {
     private ctx: IProxyContext;
     private settings: IProxySettings;
     private util: ProxyUtils;
+    private request: Request;
 
     constructor(context: IProxyContext, settings: IProxySettings) {
         this.ctx = context;
@@ -24,11 +25,7 @@ export class PipeRouter {
 
         let requestHeadersPass: any = {};
 
-        let ignoreHeaders = [
-            'host', 'referer', 'origin',
-            'if-none-match', 'connection', 'cache-control', 'user-agent',
-            'accept-encoding', 'x-requested-with', 'accept-language'
-        ];
+        let ignoreHeaders = ['host', 'referer', 'origin', 'if-none-match', 'connection', 'x-requested-with'];
 
         Object.keys(req.headers).forEach((prop: string) => {
             if (ignoreHeaders.indexOf(prop.toLowerCase()) === -1) {
@@ -49,13 +46,16 @@ export class PipeRouter {
         }
 
         this.spr.get(endpointUrl, {
-            headers: requestHeadersPass
+            headers: requestHeadersPass,
+            json: false,
+            encoding: null
         })
             .then((response: any) => {
                 if (this.settings.debugOutput) {
                     console.log(response.statusCode, response.body);
                 }
                 res.status(response.statusCode);
+                res.set(response.headers);
                 res.send(response.body);
             })
             .catch((err: any) => {
