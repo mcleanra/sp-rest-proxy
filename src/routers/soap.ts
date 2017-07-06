@@ -45,11 +45,17 @@ export class SoapRouter {
                         'Content-Length': soapBody.length
                     };
 
-                    this.spr.post(endpointUrl, {
+                    let data = {
                         headers: headers,
                         body: soapBody,
                         json: false
-                    })
+                    };
+
+                    if (!this.settings.silentMode) {
+                        console.log('\nData: ' + JSON.stringify(data));
+                    }
+
+                    this.spr.post(endpointUrl, data)
                         .then((response: any) => {
                             if (this.settings.debugOutput) {
                                 console.log(response.statusCode, response.body);
