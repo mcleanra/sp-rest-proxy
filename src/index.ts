@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 'use strict';
 
 import { Request, Response, NextFunction } from 'express';
@@ -109,4 +110,7 @@ class RestProxy {
     }
 }
 
+=======
+import RestProxy from './RestProxy';
+>>>>>>> upstream/master
 module.exports = RestProxy;

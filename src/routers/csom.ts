@@ -4,7 +4,7 @@ import { ISPRequest } from 'sp-request';
 import { IAuthResponse } from 'node-sp-auth';
 import { Request, Response, NextFunction } from 'express';
 
-export class SoapRouter {
+export class CsomRouter {
 
     private spr: ISPRequest;
     private ctx: IProxyContext;
@@ -25,38 +25,43 @@ export class SoapRouter {
             console.log('\nPOST: ' + endpointUrl);
         }
 
-        let soapBody = '';
+        let regExpOrigin = new RegExp(req.headers.origin, 'g');
+        let csomPackage = '';
         req.on('data', (chunk) => {
-            soapBody += chunk;
+            csomPackage += chunk;
         });
         req.on('end', () => {
-            if (req.headers.origin) {
-                let regExpOrigin = new RegExp(req.headers.origin, 'g');
-                soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
-            }
 
-            this.util.getAuthOptions()
-                .then((opt: IAuthResponse) => {
+            Promise.all([
+                this.spr.requestDigest((endpointUrl).split('/_vti_bin')[0]),
+                this.util.getAuthOptions()
+            ])
+                .then((response: any) => {
+
+                    let digest: string = response[0];
+                    let opt: IAuthResponse = response[1];
+
                     let headers = {
                         ...opt.headers,
-                        'Accept': 'application/xml, text/xml, */*; q=0.01',
-                        'Content-Type': 'text/xml;charset="UTF-8"',
+                        'Accept': '*/*',
+                        'Content-Type': 'text/xml',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Length': soapBody.length
+                        'X-RequestDigest': digest,
+                        'Content-Length': csomPackage.length
                     };
 
-                    this.spr.post(endpointUrl, {
+                    return this.spr.post(endpointUrl, {
                         headers: headers,
-                        body: soapBody,
+                        body: csomPackage,
                         json: false
-                    })
-                        .then((response: any) => {
-                            if (this.settings.debugOutput) {
-                                console.log(response.statusCode, response.body);
-                            }
-                            res.send(response);
-                            res.end();
-                        });
+                    });
+                })
+                .then((response: any) => {
+                    if (this.settings.debugOutput) {
+                        console.log(response.statusCode, response.body);
+                    }
+                    res.send(response);
+                    res.end();
                 })
                 .catch((err: any) => {
                     res.status(err.statusCode);

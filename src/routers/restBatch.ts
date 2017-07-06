@@ -3,7 +3,7 @@ import { IProxyContext, IProxySettings } from '../interfaces';
 import { ISPRequest } from 'sp-request';
 import { Request, Response, NextFunction } from 'express';
 
-export class RestPostRouter {
+export class RestBatchRouter {
 
     private spr: ISPRequest;
     private ctx: IProxyContext;
@@ -20,26 +20,32 @@ export class RestPostRouter {
         let endpointUrl = this.util.buildEndpointUrl(request.originalUrl);
 
         if (!this.settings.silentMode) {
-            console.log('\nPOST: ' + endpointUrl);
+            console.log('\POST (batch): ' + endpointUrl);
         }
 
         let reqBody = '';
 
         if (request.body) {
             reqBody = request.body;
-            this.processPostRequest(reqBody, request, response);
+            this.processBatchRequest(reqBody, request, response);
         } else {
             request.on('data', (chunk) => {
                 reqBody += chunk;
             });
             request.on('end', () => {
-                this.processPostRequest(reqBody, request, response);
+                this.processBatchRequest(reqBody, request, response);
             });
         }
     }
 
-    private processPostRequest = (reqBodyData: any, req: Request, res: Response) => {
+    private processBatchRequest = (reqBodyData: any, req: Request, res: Response) => {
         let endpointUrlStr = this.util.buildEndpointUrl(req.originalUrl);
+
+        reqBodyData = (req as any).rawBody;
+
+        // Hack for PnP-JS-Core temporary testing approach
+        // reqBodyData = reqBodyData.replace(/ _api/g, ` ${endpointUrlStr.replace('/_api/$batch', '/')}_api`);
+        // req.headers['Content-Length'] = reqBodyData.byteLength;
 
         if (!this.settings.silentMode) {
             console.log('Request body:', reqBodyData);
@@ -50,9 +56,7 @@ export class RestPostRouter {
         this.spr.requestDigest((endpointUrlStr).split('/_api')[0])
             .then((digest: string) => {
                 let requestHeadersPass: any = {};
-                let jsonOption: any = {
-                    json: true
-                };
+
                 let ignoreHeaders = [
                     'host', 'referer', 'origin',
                     'if-none-match', 'connection', 'cache-control', 'user-agent',
@@ -66,6 +70,10 @@ export class RestPostRouter {
                             requestHeadersPass['Accept'] = req.headers[prop];
                         } else if (prop.toLowerCase() === 'content-type') {
                             requestHeadersPass['Content-Type'] = req.headers[prop];
+                        } else if (prop.toLowerCase() === 'x-requestdigest') {
+                            // requestHeadersPass['X-RequestDigest'] = req.headers[prop]; // Temporary commented
+                        } else if (prop.toLowerCase() === 'content-length') {
+                            requestHeadersPass['Content-Length'] = req.headers[prop];
                         } else {
                             requestHeadersPass[prop] = req.headers[prop];
                         }
@@ -74,20 +82,9 @@ export class RestPostRouter {
 
                 requestHeadersPass = {
                     ...requestHeadersPass,
-                    'X-RequestDigest': digest,
-                    'content-length': reqBodyData.length
+                    'X-RequestDigest': requestHeadersPass['X-RequestDigest'] || digest,
+                    'Content-Length': requestHeadersPass['Content-Length'] || reqBodyData.byteLength
                 };
-
-                if (
-                    endpointUrlStr.toLowerCase().indexOf('/attachmentfiles/add') !== -1 ||
-                    endpointUrlStr.toLowerCase().indexOf('/files/add') !== -1
-                ) {
-                    // reqBodyData = (req as any).rawBody;
-                    reqBodyData = (req as any).buffer;
-                    jsonOption.json = false;
-                    jsonOption.processData = false;
-                    requestHeadersPass['content-length'] = reqBodyData.byteLength;
-                }
 
                 if (this.settings.debugOutput) {
                     console.log('\nHeaders:');
@@ -97,7 +94,7 @@ export class RestPostRouter {
                 return this.spr.post(endpointUrlStr, {
                     headers: requestHeadersPass,
                     body: reqBodyData,
-                    ...jsonOption
+                    json: false
                 });
             })
             .then((resp: any) => {
@@ -105,7 +102,7 @@ export class RestPostRouter {
                     console.log(resp.statusCode, resp.body);
                 }
                 res.status(resp.statusCode);
-                res.json(resp.body);
+                res.send(resp.body);
             })
             .catch((err: any) => {
                 res.status(err.statusCode >= 100 && err.statusCode < 600 ? err.statusCode : 500);
