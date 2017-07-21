@@ -96,6 +96,11 @@ export class GetRouter {
             requestHeadersPass.Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8';
         }
 
+        if (endpointUrl.indexOf('/_layouts') !== -1) {
+            request.get({ uri: endpointUrl }).pipe(res);
+            return;
+        }
+
         if (endpointUrl.indexOf('/ScriptResource.axd') !== -1) {
             let axdUrlArr = endpointUrl.split('/ScriptResource.axd');
             endpointUrl = axdUrlArr[0].replace('://', '___').split('/')[0].replace('___', '://') +
