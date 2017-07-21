@@ -59,12 +59,7 @@ export class SoapRouter {
                     if (!this.settings.silentMode) {
                         console.log('\nData: ' + JSON.stringify(data));
                     }
-                    /*
-                    if (data.body.indexOf('UpdateListItems') !== -1) {
-                        request.post({ url: endpointUrl, body: soapBody, headers:headers, json:false }).pipe(res);
-                        return;
-                    }
-                    */
+
                     this.spr.post(endpointUrl, data)
                         .then((response: any) => {
                             if (this.settings.debugOutput) {
