@@ -3,6 +3,7 @@ import { IProxyContext, IProxySettings } from '../interfaces';
 import { ISPRequest } from 'sp-request';
 import { IAuthResponse } from 'node-sp-auth';
 import { Request, Response, NextFunction } from 'express';
+import * as request from 'request';
 
 export class SoapRouter {
 
@@ -42,7 +43,11 @@ export class SoapRouter {
                         'Accept': 'application/xml, text/xml, */*; q=0.01',
                         'Content-Type': 'text/xml;charset="UTF-8"',
                         'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Length': soapBody.length
+                        'Content-Length': soapBody.length,
+                        'Cookie': req.headers.cookie,
+                        'User-Agent': req.headers['user-agent'],
+                        'Origin': this.ctx.siteUrl,
+                        'SOAPAction': req.headers['soapaction']
                     };
 
                     let data = {
@@ -54,7 +59,12 @@ export class SoapRouter {
                     if (!this.settings.silentMode) {
                         console.log('\nData: ' + JSON.stringify(data));
                     }
-
+                    /*
+                    if (data.body.indexOf('UpdateListItems') !== -1) {
+                        request.post({ url: endpointUrl, body: soapBody, headers:headers, json:false }).pipe(res);
+                        return;
+                    }
+                    */
                     this.spr.post(endpointUrl, data)
                         .then((response: any) => {
                             if (this.settings.debugOutput) {
