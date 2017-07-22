@@ -53,12 +53,9 @@ export class SoapRouter {
                     let data = {
                         headers: headers,
                         body: soapBody,
-                        json: false
+                        json: false,
+                        agent: this.util.isUrlHttps(endpointUrl) ? this.settings.agent : undefined
                     };
-
-                    if (!this.settings.silentMode) {
-                        console.log('\nData: ' + JSON.stringify(data));
-                    }
 
                     this.spr.post(endpointUrl, data)
                         .then((response: any) => {
