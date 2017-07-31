@@ -8,7 +8,7 @@ const settings: IProxySettings = {
     configPath: path.join(__dirname, '/../config/private.json'),
     staticRoot: path.join(__dirname, '/../static'),
     rawBodyLimitSize: '4MB',
-    debugOutput: true
+    debugOutput: false
 };
 
 (new RestProxy(settings)).serve();
