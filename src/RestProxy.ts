@@ -1,12 +1,13 @@
 'use strict';
 
-import { AuthConfig } from 'node-sp-auth-config';
+import { AuthConfig, IAuthConfigSettings } from 'node-sp-auth-config';
 import { Request, Response, NextFunction } from 'express';
 import * as express from 'express';
 import * as bodyParser from 'body-parser';
 import * as cors from 'cors';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as https from 'https';
 
 import { RestGetRouter } from './routers/restGet';
 import { RestPostRouter } from './routers/restPost';
@@ -29,9 +30,10 @@ export default class RestProxy {
     private routers: IRouters;
 
     constructor(settings: IProxySettings = {}) {
+        let authConfigSettings: IAuthConfigSettings = settings.authConfigSettings || {};
+
         this.settings = {
-            ...settings,
-            configPath: path.resolve(settings.configPath || './config/private.json'),
+            ...<any>settings,
             hostname: settings.hostname || process.env.HOSTNAME || 'localhost',
             port: settings.port || process.env.PORT || 8080,
             staticRoot: path.resolve(settings.staticRoot || path.join(__dirname, '../static')),
@@ -40,7 +42,19 @@ export default class RestProxy {
             rawBodyLimitSize: settings.rawBodyLimitSize || '2mb',
             jsonPayloadLimitSize: settings.jsonPayloadLimitSize || '2mb',
             metadata: require(path.join(__dirname, '/../package.json')),
-            silentMode: typeof settings.silentMode !== 'undefined' ? settings.silentMode : false
+            silentMode: typeof settings.silentMode !== 'undefined' ? settings.silentMode : false,
+            agent: settings.agent || new https.Agent({
+                rejectUnauthorized: false,
+                keepAlive: true,
+                keepAliveMsecs: 10000
+            }),
+            authConfigSettings: {
+                ...authConfigSettings,
+                configPath: path.resolve(authConfigSettings.configPath || settings.configPath || './config/private.json'),
+                defaultConfigPath: authConfigSettings.defaultConfigPath || settings.defaultConfigPath,
+                encryptPassword: typeof authConfigSettings.encryptPassword !== 'undefined' ? authConfigSettings.encryptPassword : true,
+                saveConfigOnDisk: typeof authConfigSettings.saveConfigOnDisk !== 'undefined' ? authConfigSettings.saveConfigOnDisk : true
+            }
         };
 
         this.app = express();
@@ -55,14 +69,12 @@ export default class RestProxy {
     }
 
     // Server proxy main mode
-    public serveProxy = (callback?: Function) => { this.serve(callback); }
+    public serveProxy = (callback?: Function) => {
+        this.serve(callback);
+    }
+
     public serve = (callback?: Function) => {
-        (new AuthConfig({
-            configPath: this.settings.configPath,
-            defaultConfigPath: this.settings.defaultConfigPath,
-            encryptPassword: true,
-            saveConfigOnDisk: true
-        }))
+        (new AuthConfig(this.settings.authConfigSettings))
             .getContext()
             .then((context: IProxyContext): void => {
 

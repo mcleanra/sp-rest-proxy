@@ -20,17 +20,17 @@ const testVariables = {
     headers: {
         verbose: {
             headers: {
-                accept: 'application/json;odata=verbose'
+                Accept: 'application/json;odata=verbose'
             }
         },
         minimalmetadata: {
             headers: {
-                accept: 'application/json;odata=minimalmetadata'
+                Accept: 'application/json;odata=minimalmetadata'
             }
         },
         nometadata: {
             headers: {
-                accept: 'application/json;odata=nometadata'
+                Accept: 'application/json;odata=nometadata'
             }
         }
     }
@@ -75,7 +75,7 @@ describe(`Proxy tests`, () => {
                             return new PnpNode(proxyContext);
                         },
                         headers: {
-                            accept: 'application/json;odata=verbose'
+                            Accept: 'application/json;odata=verbose'
                         },
                         baseUrl: proxyContext.siteUrl
                     });
@@ -89,6 +89,23 @@ describe(`Proxy tests`, () => {
                 expressServer.close();
                 // console.log(`Proxy has been stopped (${testConfig.environmentName})`)
                 done();
+            });
+
+            it(`should get contextinfo`, function(done: MochaDone): void {
+                this.timeout(30 * 1000);
+
+                axios.post(`${proxyRootUri}/_api/contextinfo`, {}, {
+                    headers: {
+                        ...testVariables.headers.verbose,
+                        'Content-Type': 'application/json;odata=verbose'
+                    }
+                })
+                    .then(response => {
+                        // expect(response.data).to.have.property('FormDigestValue');
+                        done();
+                    })
+                    .catch(done);
+
             });
 
             it(`should get web's title`, function(done: MochaDone): void {
@@ -128,7 +145,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it(`should get lists on web`, function(done: MochaDone): void {
+            it(`should get lists on the web`, function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 Promise.all([
@@ -146,7 +163,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should create new list', function(done: MochaDone): void {
+            it('should create a new list', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 axios.post(`${proxyRootUri}/_api/web/lists`, {
@@ -159,8 +176,8 @@ describe(`Proxy tests`, () => {
                 }, {
                     headers: {
                         'X-RequestDigest': getRequestDigest(),
-                        'accept': 'application/json;odata=verbose',
-                        'content-type': 'application/json;odata=verbose'
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose'
                     }
                 })
                     .then(response => {
@@ -174,7 +191,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should create list item', function(done: MochaDone): void {
+            it('should create a list item', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
@@ -187,8 +204,8 @@ describe(`Proxy tests`, () => {
                             }, {
                                 headers: {
                                     'X-RequestDigest': getRequestDigest(),
-                                    'accept': 'application/json;odata=verbose',
-                                    'content-type': 'application/json;odata=verbose'
+                                    'Accept': 'application/json;odata=verbose',
+                                    'Content-Type': 'application/json;odata=verbose'
                                 }
                             }
                         );
@@ -200,7 +217,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should update list item', function(done: MochaDone): void {
+            it('should update a list item', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
@@ -216,8 +233,8 @@ describe(`Proxy tests`, () => {
                             }, {
                                 headers: {
                                     'X-RequestDigest': getRequestDigest(),
-                                    'accept': 'application/json;odata=verbose',
-                                    'content-type': 'application/json;odata=verbose',
+                                    'Accept': 'application/json;odata=verbose',
+                                    'Content-Type': 'application/json;odata=verbose',
                                     'if-match': '*',
                                     'x-http-method': 'MERGE'
                                 }
@@ -231,7 +248,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should delete list item', function(done: MochaDone): void {
+            it('should delete a list item', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
@@ -241,8 +258,8 @@ describe(`Proxy tests`, () => {
                             `${listUri}/items(${response.data.d.results[0].Id})`, null, {
                                 headers: {
                                     'X-RequestDigest': getRequestDigest(),
-                                    'accept': 'application/json;odata=verbose',
-                                    'content-type': 'application/json;odata=verbose',
+                                    'Accept': 'application/json;odata=verbose',
+                                    'Content-Type': 'application/json;odata=verbose',
                                     'if-match': '*',
                                     'x-http-method': 'DELETE'
                                 }
@@ -286,7 +303,64 @@ describe(`Proxy tests`, () => {
                 });
 
                 // Add test to check if items were physically created
-                it('should create list items in batch', function(done: MochaDone): void {
+                it('should create list items in a batch (local endpoints)', function(done: MochaDone): void {
+                    this.timeout(30 * 1000);
+
+                    let items = [ 'Batman', 'Iron man' ];
+
+                    let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
+                    axios.get(`${listUri}?$select=ListItemEntityTypeFullName`, testVariables.headers.verbose)
+                        .then((response: any) => {
+
+                            const listItemEntityTypeFullName: string = response.data.d.ListItemEntityTypeFullName;
+                            const boundary = `batch_${pnp.Util.getGUID()}`;
+                            const changeset = `changeset_${pnp.Util.getGUID()}`;
+
+                            const listEndpoint = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')/items`;
+
+                            let requestPayload = trimMultiline(`
+                                --${boundary}
+                                Content-Type: multipart/mixed; boundary="${changeset}"
+
+                                ${items.map((item: string) => {
+                                    return trimMultiline(`
+                                        --${changeset}
+                                        Content-Type: application/http
+                                        Content-Transfer-Encoding: binary
+
+                                        POST ${listEndpoint} HTTP/1.1
+                                        Accept: application/json;
+                                        Content-Type: application/json;odata=verbose;charset=utf-8
+
+                                        {"__metadata":{"type":"${listItemEntityTypeFullName}"},"Title":"${item}"}
+                                    `);
+                                }).join('\n\n')}
+
+                                --${changeset}--
+
+                                --${boundary}--
+                            `);
+
+                            return axios.post(
+                                `${proxyRootUri}/_api/$batch`,
+                                requestPayload, {
+                                    headers: {
+                                        'X-RequestDigest': getRequestDigest(),
+                                        'Accept': 'application/json',
+                                        'Content-Type': `multipart/mixed; boundary=${boundary}`
+                                    }
+                                }
+                            );
+                        })
+                        .then(response => {
+                            done();
+                        })
+                        .catch(done);
+
+                });
+
+                // Add test to check if items were physically created
+                it('should create list items in a batch', function(done: MochaDone): void {
                     this.timeout(30 * 1000);
 
                     let dragons = [ 'Jineoss',  'Zyna', 'Bothir', 'Jummerth', 'Irgonth', 'Kilbiag',
@@ -330,8 +404,8 @@ describe(`Proxy tests`, () => {
                                 requestPayload, {
                                     headers: {
                                         'X-RequestDigest': getRequestDigest(),
-                                        'accept': 'application/json',
-                                        'content-type': `multipart/mixed; boundary=${boundary}`
+                                        'Accept': 'application/json',
+                                        'Content-Type': `multipart/mixed; boundary=${boundary}`
                                     }
                                 }
                             );
@@ -344,7 +418,7 @@ describe(`Proxy tests`, () => {
                 });
 
                 // Add test to check if items were physically updated
-                it('should update list items in batch', function(done: MochaDone): void {
+                it('should update list items in a batch', function(done: MochaDone): void {
                     this.timeout(30 * 1000);
 
                     let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
@@ -396,8 +470,8 @@ describe(`Proxy tests`, () => {
                                 requestPayload, {
                                     headers: {
                                         'X-RequestDigest': getRequestDigest(),
-                                        'accept': 'application/json',
-                                        'content-type': `multipart/mixed; boundary=${boundary}`
+                                        'Accept': 'application/json',
+                                        'Content-Type': `multipart/mixed; boundary=${boundary}`
                                     }
                                 }
                             );
@@ -410,7 +484,7 @@ describe(`Proxy tests`, () => {
                 });
 
                 // Add test to check if items were physically deleted
-                it('should delete list items in batch', function(done: MochaDone): void {
+                it('should delete list items in a batch', function(done: MochaDone): void {
                     this.timeout(30 * 1000);
 
                     let listUri = `${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`;
@@ -456,8 +530,8 @@ describe(`Proxy tests`, () => {
                                 requestPayload, {
                                     headers: {
                                         'X-RequestDigest': getRequestDigest(),
-                                        'accept': 'application/json',
-                                        'content-type': `multipart/mixed; boundary=${boundary}`
+                                        'Accept': 'application/json',
+                                        'Content-Type': `multipart/mixed; boundary=${boundary}`
                                     }
                                 }
                             );
@@ -484,8 +558,8 @@ describe(`Proxy tests`, () => {
                             }, {
                                 headers: {
                                     'X-RequestDigest': getRequestDigest(),
-                                    'accept': 'application/json;odata=verbose',
-                                    'content-type': 'application/json;odata=verbose'
+                                    'Accept': 'application/json;odata=verbose',
+                                    'Content-Type': 'application/json;odata=verbose'
                                 }
                             }
                         );
@@ -499,8 +573,8 @@ describe(`Proxy tests`, () => {
                              fileBuffer, {
                                 headers: {
                                     'X-RequestDigest': getRequestDigest(),
-                                    'accept': 'application/json',
-                                    'content-type': 'application/json;odata=verbose;charset=utf-8'
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json;odata=verbose;charset=utf-8'
                                 }
                             }
                         );
@@ -514,14 +588,14 @@ describe(`Proxy tests`, () => {
 
             // TODO: Download attachment and compare with local one
 
-            it('should delete list', function(done: MochaDone): void {
+            it('should delete a list', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 axios.post(`${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newListName}')`, null, {
                     headers: {
                         'X-RequestDigest': getRequestDigest(),
-                        'accept': 'application/json;odata=verbose',
-                        'content-type': 'application/json;odata=verbose',
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose',
                         'if-match': '*',
                         'x-http-method': 'DELETE'
                     }
@@ -533,7 +607,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should create document library', function(done: MochaDone): void {
+            it('should create a document library', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 axios.post(`${proxyRootUri}/_api/web/lists`, {
@@ -546,8 +620,8 @@ describe(`Proxy tests`, () => {
                 }, {
                     headers: {
                         'X-RequestDigest': getRequestDigest(),
-                        'accept': 'application/json;odata=verbose',
-                        'content-type': 'application/json;odata=verbose'
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose'
                     }
                 })
                     .then(response => {
@@ -557,7 +631,7 @@ describe(`Proxy tests`, () => {
 
             });
 
-            it('should add document', function(done: MochaDone): void {
+            it('should add a document', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 let attachmentFile: string = path.join(__dirname, './attachments/image.png');
@@ -574,8 +648,8 @@ describe(`Proxy tests`, () => {
                     methodUri, fileBuffer, {
                         headers: {
                             'X-RequestDigest': getRequestDigest(),
-                            'accept': 'application/json',
-                            'content-type': 'application/json;odata=verbose;charset=utf-8'
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json;odata=verbose;charset=utf-8'
                         }
                     }
                 )
@@ -588,14 +662,14 @@ describe(`Proxy tests`, () => {
 
             // TODO: Download documents and compare with local one
 
-            it('should delete document library', function(done: MochaDone): void {
+            it('should delete a document library', function(done: MochaDone): void {
                 this.timeout(30 * 1000);
 
                 axios.post(`${proxyRootUri}/_api/web/lists/getByTitle('${testVariables.newDocLibName}')`, null, {
                     headers: {
                         'X-RequestDigest': getRequestDigest(),
-                        'accept': 'application/json;odata=verbose',
-                        'content-type': 'application/json;odata=verbose',
+                        'Accept': 'application/json;odata=verbose',
+                        'Content-Type': 'application/json;odata=verbose',
                         'if-match': '*',
                         'x-http-method': 'DELETE'
                     }
@@ -635,7 +709,7 @@ describe(`Proxy tests`, () => {
                     pnp.sp.web.select('Title').get()
                 ])
                     .then(response => {
-                        xmlStringToJson(response[0].data.body, (err: any, soapResp: any) => {
+                        xmlStringToJson(response[0].data, (err: any, soapResp: any) => {
                             if (err) {
                                 done(err);
                             } else {
@@ -685,7 +759,7 @@ describe(`Proxy tests`, () => {
                     pnp.sp.web.select('Title').get()
                 ])
                     .then(response => {
-                        let csomResp: any = JSON.parse(response[0].data.body)[4];
+                        let csomResp: any = response[0].data[4];
                         let pnpResp: any = response[1];
                         expect(csomResp.Title).to.be.equal(pnpResp.Title);
                         done();

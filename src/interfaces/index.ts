@@ -1,9 +1,9 @@
 import { IAuthOptions } from 'node-sp-auth';
+import { IAuthConfigSettings } from 'node-sp-auth-config';
 import { Router } from 'express';
+import * as https from 'https';
 
 export interface IProxySettings {
-    configPath?: string;
-    defaultConfigPath?: string;
     hostname?: string;
     port?: number;
     staticRoot?: string;
@@ -13,6 +13,11 @@ export interface IProxySettings {
     debugOutput?: boolean;
     metadata?: any;
     silentMode?: boolean;
+    agent?: https.Agent;
+
+    authConfigSettings?: IAuthConfigSettings;
+    configPath?: string; // Legacy
+    defaultConfigPath?: string; // Legacy
 }
 
 export interface IProxyContext {

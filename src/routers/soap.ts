@@ -32,7 +32,7 @@ export class SoapRouter {
         });
         req.on('end', () => {
             if (req.headers.origin) {
-                let regExpOrigin = new RegExp(req.headers.origin, 'g');
+                let regExpOrigin = new RegExp(<any>req.headers.origin, 'g');
                 soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
             }
 
@@ -53,7 +53,8 @@ export class SoapRouter {
                     let data = {
                         headers: headers,
                         body: soapBody,
-                        json: false
+                        json: false,
+                        agent: this.util.isUrlHttps(endpointUrl) ? this.settings.agent : undefined
                     };
 
                     if (!this.settings.silentMode) {
