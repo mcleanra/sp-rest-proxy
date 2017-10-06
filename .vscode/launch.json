@@ -13,7 +13,7 @@
             "env": {
                 "NODE_ENV": "development"
             },
-            "outFiles": [],
+            "outFiles": ["${workspaceRoot}/dist/**/*.js"],
             "sourceMaps": true
         },
         {
@@ -21,7 +21,7 @@
             "type": "node",
             "request": "attach",
             "port": 9229,
-            "outFiles": [],
+            "outFiles": ["${workspaceRoot}/dist/**/*.js"],
             "sourceMaps": true
         }
     ]
