@@ -31,8 +31,8 @@ export class SoapRouter {
             soapBody += chunk;
         });
         req.on('end', () => {
-            if (req.headers.origin) {
-                let regExpOrigin = new RegExp(<any>req.headers.origin, 'g');
+            if (req.headers.referer) {
+                let regExpOrigin = new RegExp(<any>req.headers.referer, 'g');
                 soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
             }
 
