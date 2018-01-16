@@ -83,6 +83,7 @@ export class GetRouter {
     };
 
     let ext = endpointUrl.split('?')[0].split('.').pop().toLowerCase();
+
     if (['js', 'css', 'aspx', 'css', 'html', 'json', 'axd'].indexOf(ext) !== -1) {
       delete advanced.encoding;
       requestHeadersPass.Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8';
@@ -100,6 +101,11 @@ export class GetRouter {
       return;
     }
 
+    if (endpointUrl.indexOf('/_layouts') !== -1) {
+      request.get({ uri: endpointUrl }).pipe(res);
+      return;
+    }
+
     this.spr.get(endpointUrl, {
       headers: requestHeadersPass,
       ...advanced as any,
@@ -107,18 +113,7 @@ export class GetRouter {
     })
       .then((response: any) => {
         if (!this.settings.silentMode) {
-          // console.log(response.statusCode, response.headers['content-type']);
-        }
-
-        if (endpointUrl.indexOf('/_layouts') !== -1) {
-            request.get({ uri: endpointUrl }).pipe(res);
-            return;
-        }
-
-        if (endpointUrl.indexOf('/ScriptResource.axd') !== -1) {
-            let axdUrlArr = endpointUrl.split('/ScriptResource.axd');
-            endpointUrl = axdUrlArr[0].replace('://', '___').split('/')[0].replace('___', '://') +
-                '/ScriptResource.axd' + axdUrlArr[1];
+           console.log(response.statusCode, response.headers['content-type']);
         }
         
         res.status(response.statusCode);
