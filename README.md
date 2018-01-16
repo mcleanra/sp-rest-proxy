@@ -4,23 +4,34 @@
 
 [![npm version](https://badge.fury.io/js/sp-rest-proxy.svg)](https://badge.fury.io/js/sp-rest-proxy)
 [![Downloads](https://img.shields.io/npm/dm/sp-rest-proxy.svg)](https://www.npmjs.com/package/sp-rest-proxy)
+[![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/sharepoint-node/Lobby)
 
-Allows to perform API calls to local Express application with forwarding the queries to a remote SharePoint instance.
+Allows performing API calls to local Express application with forwarding the queries to a remote SharePoint instance.
 
-This concept was created to show how is could be easy to implements real world data communications for SharePoint Framework local serve mode during web parts debug without deployment to SharePoint tenant.
+This concept was created to show how it could be easy to implements real world data communications for SharePoint Framework local serve mode during web parts debug without deployment to SharePoint tenant.
+
+## Supports SPFx and PnP JS Core
 
 ## Supported SharePoint versions
+
 - SharePoint Online
 - SharePoint 2013
 - SharePoint 2016
 
+## Development paradigms
+
+- SPA development ([Angular](http://johnliu.net/blog/2017/9/angular-4-sharepoint-on-premises-localhost-development-and-sp-rest-proxy), [React](https://www.linkedin.com/pulse/getting-started-react-local-development-sharepoint-andrew-koltyakov/), Vue.js, etc.) in serve mode against real data for On-Prem and Online
+- [SharePoint Framework with local workbench](https://www.linkedin.com/pulse/local-spfx-workbench-against-real-sharepoint-api-andrew-koltyakov/)
+
 ## Support proxying
+
 - REST API
 - CSOM requests
 - SOAP web services
 - Static resources
 
 ## Proxy modes
+
 - API Proxy server
 - Socket gateway server
 - Socket gateway client
@@ -32,7 +43,7 @@ Socket proxying allows to forward API from behind NAT (experimental).
 1\. Install NPM module in the project:
 
 ```bash
-npm install --save-dev sp-rest-proxy
+npm install sp-rest-proxy --save-dev
 ```
 
 or
@@ -118,7 +129,7 @@ npm run ts-serve
 
 Prompts credentials for a SharePoint site.
 
-6\. Navigate to http://localhost:8080 (or whatever in settings)
+6\. Navigate to `http://localhost:8080` (or whatever in settings)
 
 7\. Ajax REST calls as if you were in SharePoint site page context:
 
@@ -148,14 +159,23 @@ The proxy provides wizard-like approach for building and managing config files f
 For more information please check node-sp-auth [credential options](https://github.com/s-KaiNet/node-sp-auth#params) and [wiki pages](https://github.com/s-KaiNet/node-sp-auth/wiki).
 Auth settings are stored inside `./config/private.json`.
 
-## Some additional info
+## PnP JS Core
 
-sp-rest-proxy works with PnP JS Core (not POST request, as there is an endpoint transformation during POST request in PnP JS Core):
+sp-rest-proxy works with PnP JS Core (check out [brief notice](https://github.com/koltyakov/sp-rest-proxy/issues/26) how to configure).
 
 ![PnP JS Core + sp-rest-proxy](http://koltyakov.ru/images/pnp-sp-rest-proxy.png)
+
+## SharePoint Framework
+
+[Blog post article with setting up SPFx and Proxy](https://www.linkedin.com/pulse/local-spfx-workbench-against-real-sharepoint-api-andrew-koltyakov/)
 
 ## Use cases
 
 - Client side applications development with local serve, but real data from SharePoint
 - SharePoint Framework in local workbench with real data
 - Client applications integration test automation scenarios
+
+## Usage with Docker
+
+- [Docker Hub](https://hub.docker.com/r/koltyakov/sp-rest-proxy/)
+- [Local example](https://github.com/koltyakov/sp-rest-proxy/tree/master/docker)

@@ -7,34 +7,34 @@ import * as request from 'request';
 
 export class SoapRouter {
 
-    private spr: ISPRequest;
-    private ctx: IProxyContext;
-    private settings: IProxySettings;
-    private util: ProxyUtils;
+  private spr: ISPRequest;
+  private ctx: IProxyContext;
+  private settings: IProxySettings;
+  private util: ProxyUtils;
 
-    constructor(context: IProxyContext, settings: IProxySettings) {
-        this.ctx = context;
-        this.settings = settings;
-        this.util = new ProxyUtils(this.ctx);
+  constructor (context: IProxyContext, settings: IProxySettings) {
+    this.ctx = context;
+    this.settings = settings;
+    this.util = new ProxyUtils(this.ctx);
+  }
+
+  public router = (req: Request, res: Response, next?: NextFunction) => {
+    let endpointUrl = this.util.buildEndpointUrl(req.originalUrl);
+    this.spr = this.util.getCachedRequest(this.spr);
+
+    if (!this.settings.silentMode) {
+      console.log('\nPOST: ' + endpointUrl);
     }
 
-    public router = (req: Request, res: Response, next?: NextFunction) => {
-        let endpointUrl = this.util.buildEndpointUrl(req.originalUrl);
-        this.spr = this.util.getCachedRequest(this.spr);
-
-        if (!this.settings.silentMode) {
-            console.log('\nPOST: ' + endpointUrl);
-        }
-
-        let soapBody = '';
-        req.on('data', (chunk) => {
-            soapBody += chunk;
-        });
-        req.on('end', () => {
-            if (req.headers.origin) {
-                let regExpOrigin = new RegExp(req.headers.origin, 'g');
-                soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
-            }
+    let soapBody = '';
+    req.on('data', (chunk) => {
+      soapBody += chunk;
+    });
+    req.on('end', () => {
+      if (req.headers.origin) {
+        let regExpOrigin = new RegExp(req.headers.origin as any, 'g');
+        soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
+      }
 
             this.util.getAuthOptions()
                 .then((opt: IAuthResponse) => {
@@ -71,5 +71,6 @@ export class SoapRouter {
                     res.json(err);
                 });
         });
-    }
+    });
+  }
 }
