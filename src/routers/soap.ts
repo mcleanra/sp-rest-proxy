@@ -71,6 +71,5 @@ export class SoapRouter {
                     res.json(err);
                 });
         });
-    });
   }
 }
