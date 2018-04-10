@@ -44,6 +44,16 @@ export class PostRouter {
         if (prop.toLowerCase() === 'content-type') {
           requestHeadersPass['Content-Type'] = req.headers[prop];
         }
+        // Slug header fixes https://github.com/koltyakov/sp-rest-proxy/issues/51
+        if (prop.toLowerCase() === 'slug') {
+          requestHeadersPass['Slug'] = req.headers[prop];
+        }
+        if (prop.toLowerCase() === 'if-match') {
+          requestHeadersPass['If-Match'] = req.headers[prop];
+        }
+        if (prop.toLowerCase() === 'x-http-method') {
+          requestHeadersPass['X-HTTP-Method'] = req.headers[prop];
+        }
       });
 
       this.util.getAuthOptions()
@@ -58,22 +68,22 @@ export class PostRouter {
             processData: false
           };
 
-          this.spr.post(endpointUrl, {
+          return this.spr.post(endpointUrl, {
             headers: headers,
             body: postBody,
             ...options as any,
             agent: this.util.isUrlHttps(endpointUrl) ? this.settings.agent : undefined
-          })
-            .then((response: any) => {
-              if (this.settings.debugOutput) {
-                console.log(response.statusCode, response.body);
-              }
+          });
+        })
+        .then((response: any) => {
+          if (this.settings.debugOutput) {
+            console.log(response.statusCode, response.body);
+          }
 
-              res.status(response.statusCode);
-              res.contentType(response.headers['content-type']);
+          res.status(response.statusCode);
+          res.contentType(response.headers['content-type'] || '');
 
-              res.send(response.body);
-            });
+          res.send(response.body);
         })
         .catch((err: any) => {
           res.status(err.statusCode >= 100 && err.statusCode < 600 ? err.statusCode : 500);

@@ -22,9 +22,13 @@ import { GetRouter } from './routers/genericGet';
 import { Server as GatewayServer } from './gateway/server';
 import { Client as GatewayClient } from './gateway/client';
 
-import { IProxySettings, IProxyContext, IRouters,
-         IGatewayServerSettings, IGatewayClientSettings,
-         IProxyCallback
+import {
+  IProxySettings,
+  IProxyContext,
+  IRouters,
+  IGatewayServerSettings,
+  IGatewayClientSettings,
+  IProxyCallback
 } from './interfaces';
 
 export default class RestProxy {
@@ -42,8 +46,8 @@ export default class RestProxy {
       port: settings.port || process.env.PORT || 8080,
       staticRoot: path.resolve(settings.staticRoot || path.join(__dirname, '../static')),
       debugOutput: settings.debugOutput || false,
-      rawBodyLimitSize: settings.rawBodyLimitSize || '2mb',
-      jsonPayloadLimitSize: settings.jsonPayloadLimitSize || '2mb',
+      rawBodyLimitSize: settings.rawBodyLimitSize || '10MB',
+      jsonPayloadLimitSize: settings.jsonPayloadLimitSize || '2MB',
       metadata: require(path.join(__dirname, '/../package.json')),
       silentMode: typeof settings.silentMode !== 'undefined' ? settings.silentMode : false,
       agent: settings.agent || new https.Agent({
@@ -96,7 +100,13 @@ export default class RestProxy {
 
         // REST - Files and attachments
         this.routers.apiRestRouter.post(
-          '/*(/attachmentfiles/add|/files/add)*',
+          `/*(${[
+            '/attachmentfiles/add',
+            '/files/add',
+            '/startUpload',
+            '/continueUpload',
+            '/finishUpload'
+          ].join('|')})*`,
           bodyParserRaw,
           (new RestPostRouter(context, this.settings)).router
         );
@@ -218,4 +228,9 @@ export default class RestProxy {
 
 }
 
-export { IProxySettings, IProxyContext, IGatewayClientSettings, IGatewayServerSettings } from './interfaces';
+export {
+  IProxySettings,
+  IProxyContext,
+  IGatewayClientSettings,
+  IGatewayServerSettings
+} from './interfaces';

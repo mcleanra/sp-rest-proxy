@@ -1,4 +1,4 @@
-# sp-rest-proxy - SharePoint REST API Proxy for Node.js and Express local serve
+# sp-rest-proxy - SharePoint REST API Proxy for local Front-end development tool-chains
 
 [![NPM](https://nodei.co/npm/sp-rest-proxy.png?mini=true&downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/sp-rest-proxy/)
 
@@ -6,9 +6,9 @@
 [![Downloads](https://img.shields.io/npm/dm/sp-rest-proxy.svg)](https://www.npmjs.com/package/sp-rest-proxy)
 [![Gitter chat](https://badges.gitter.im/gitterHQ/gitter.png)](https://gitter.im/sharepoint-node/Lobby)
 
-Allows performing API calls to local Express application with forwarding the queries to a remote SharePoint instance.
+> Allows performing API calls to local Express application with forwarding the queries to a remote SharePoint instance.
 
-This concept was created to show how it could be easy to implements real world data communications for SharePoint Framework local serve mode during web parts debug without deployment to SharePoint tenant.
+Original concept of the proxy was created to show how it could be easy to implements real world data communications for SharePoint Framework local serve mode during web parts debug without deployment to SharePoint tenant. Now the tool is used with multiple teams for modern front-end solutions [rapid development](https://github.com/koltyakov/sp-rest-proxy#development-paradigms).
 
 ## Supports SPFx and PnP JS Core
 
@@ -22,8 +22,9 @@ This concept was created to show how it could be easy to implements real world d
 
 - SPA development ([Angular](http://johnliu.net/blog/2017/9/angular-4-sharepoint-on-premises-localhost-development-and-sp-rest-proxy), [React](https://www.linkedin.com/pulse/getting-started-react-local-development-sharepoint-andrew-koltyakov/), Vue.js, etc.) in serve mode against real data for On-Prem and Online
 - [SharePoint Framework with local workbench](https://www.linkedin.com/pulse/local-spfx-workbench-against-real-sharepoint-api-andrew-koltyakov/)
+- [SharePoint AddIns development](https://github.com/koltyakov/sp-rest-proxy/issues/41)
 
-## Support proxying
+## Supports proxying
 
 - REST API
 - CSOM requests
@@ -58,9 +59,9 @@ yarn add sp-rest-proxy --dev
 const RestProxy = require('sp-rest-proxy');
 
 const settings = {
-    configPath: './config/private.json', // Location for SharePoint instance mapping and credentials
-    port: 8080,                          // Local server port
-    staticRoot: './static'               // Root folder for static content
+  configPath: './config/private.json', // Location for SharePoint instance mapping and credentials
+  port: 8080,                          // Local server port
+  staticRoot: './static'               // Root folder for static content
 };
 
 const restProxy = new RestProxy(settings);
@@ -73,7 +74,7 @@ restProxy.serve();
 
 ```json
 "scripts": {
-    "serve": "node ./server.js"
+  "serve": "node ./server.js"
 }
 ```
 
@@ -164,6 +165,41 @@ Auth settings are stored inside `./config/private.json`.
 sp-rest-proxy works with PnP JS Core (check out [brief notice](https://github.com/koltyakov/sp-rest-proxy/issues/26) how to configure).
 
 ![PnP JS Core + sp-rest-proxy](http://koltyakov.ru/images/pnp-sp-rest-proxy.png)
+
+### Load page context helper
+
+sp-rest-proxy includes helper method for configuring page context - `loadPageContext`.
+
+```typescript
+import { loadPageContext } from 'sp-rest-proxy/dist/utils/env';
+import { Web } from '@pnp/sp';
+
+// loadPageContext - gets correct URL in localhost and SP environments
+loadPageContext().then(async _ => {
+
+  // In both localhost and published to SharePoint page
+  // `_spPageContextInfo` will contain correct info for vital props
+
+  // PnPjs's Web object should be created in the following way
+  const web = new Web(_spPageContextInfo.webAbsoluteUrl);
+
+  // Then goes ordinary PnPjs code
+  const batch = web.createBatch();
+
+  const list = web.getList(`${_spPageContextInfo.webServerRelativeUrl}/List/ListName`);
+  const entityName = await list.getListItemEntityTypeFullName();
+
+  [1, 2, 3, 4].forEach(el => {
+    list.items.inBatch(batch).add({
+      Title: `${el}`
+    }, entityName);
+  });
+
+  await batch.execute();
+  console.log('Done');
+
+}).catch(log);
+```
 
 ## SharePoint Framework
 
