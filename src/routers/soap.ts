@@ -12,7 +12,7 @@ export class SoapRouter {
   private settings: IProxySettings;
   private util: ProxyUtils;
 
-  constructor (context: IProxyContext, settings: IProxySettings) {
+  constructor(context: IProxyContext, settings: IProxySettings) {
     this.ctx = context;
     this.settings = settings;
     this.util = new ProxyUtils(this.ctx);
@@ -30,25 +30,26 @@ export class SoapRouter {
     req.on('data', (chunk) => {
       soapBody += chunk;
     });
+
     req.on('end', () => {
       if (req.headers.origin) {
         let regExpOrigin = new RegExp(req.headers.origin as any, 'g');
         soapBody = soapBody.replace(regExpOrigin, this.ctx.siteUrl);
       }
 
-            this.util.getAuthOptions()
-                .then((opt: IAuthResponse) => {
-                    let headers = {
-                        ...opt.headers,
-                        'Accept': 'application/xml, text/xml, */*; q=0.01',
-                        'Content-Type': 'text/xml;charset="UTF-8"',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Content-Length': soapBody.length,
-                        'Cookie': req.headers.cookie,
-                        'User-Agent': req.headers['user-agent'],
-                        'Origin': this.ctx.siteUrl,
-                        'SOAPAction': req.headers['soapaction']
-                    };
+      this.util.getAuthOptions()
+        .then((opt: IAuthResponse) => {
+          let headers = {
+            ...opt.headers,
+            'Accept': 'application/xml, text/xml, */*; q=0.01',
+            'Content-Type': 'text/xml;charset="UTF-8"',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Length': soapBody.length,
+            'Cookie': req.headers.cookie,
+            'User-Agent': req.headers['user-agent'],
+            'Origin': this.ctx.siteUrl,
+            'SOAPAction': req.headers['soapaction']
+          };
 
           return this.spr.post(endpointUrl, {
             headers: headers,
@@ -68,5 +69,6 @@ export class SoapRouter {
           res.status(err.statusCode);
           res.json(err);
         });
+    });
   }
 }
