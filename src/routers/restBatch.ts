@@ -43,12 +43,24 @@ export class RestBatchRouter {
 
     reqBodyData = (req as any).rawBody;
 
-    // Hack for PnP-JS-Core temporary testing approach
-    // reqBodyData = reqBodyData.replace(/ _api/g, ` ${endpointUrlStr.replace('/_api/$batch', '/')}_api`);
-    // req.headers['Content-Length'] = reqBodyData.byteLength;
-
-    let regExpOrigin = new RegExp(req.headers.origin as any, 'g');
-    reqBodyData = reqBodyData.replace(regExpOrigin, this.ctx.siteUrl);
+    const { processBatchMultipartBody: transform } = this.settings;
+    if (transform && typeof transform === 'function') {
+      reqBodyData = transform(reqBodyData);
+    } else {
+      const regExp = new RegExp('^(POST|GET) https?://localhost(:[0-9]+)?/', 'i');
+      const origin = this.ctx.siteUrl.replace('://', '___').split('/')[0].replace('___', '://');
+      reqBodyData = reqBodyData.split('\n').map(line => {
+        if (regExp.test(line)) {
+          const parts = line.split(' ');
+          const method = parts.shift();
+          const version = parts.pop();
+          let endpoint = parts.join(' ');
+          endpoint = `${origin}/${endpoint.replace('://', '___').split('/').splice(1, 100).join('/')}`;
+          line = `${method} ${endpoint} ${version}`;
+        }
+        return line;
+      }).join('\n');
+    }
     req.headers['Content-Length'] = reqBodyData.byteLength;
 
     if (!this.settings.silentMode) {
